@@ -108,10 +108,12 @@ class SimpleSearchTest(GrailTestData, PostgreSQLTestCase):
         self.assertSequenceEqual(searched, [self.verse1])
 
     def test_non_exact_match(self):
+        self.check_default_text_search_config()
         searched = Line.objects.filter(dialogue__search="hearts")
         self.assertSequenceEqual(searched, [self.verse2])
 
     def test_search_two_terms(self):
+        self.check_default_text_search_config()
         searched = Line.objects.filter(dialogue__search="heart bowel")
         self.assertSequenceEqual(searched, [self.verse2])
 
@@ -366,6 +368,7 @@ class TestCombinations(GrailTestData, PostgreSQLTestCase):
             Line.objects.filter(dialogue__search=None + SearchVector("character__name"))
 
     def test_combine_different_vector_configs(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             search=(
                 SearchVector("dialogue", config="english")
@@ -438,6 +441,7 @@ class TestCombinations(GrailTestData, PostgreSQLTestCase):
         self.assertSequenceEqual(searched, [self.verse2])
 
     def test_combine_raw_phrase(self):
+        self.check_default_text_search_config()
         searched = Line.objects.filter(
             dialogue__search=(
                 SearchQuery("burn:*", search_type="raw", config="simple")
@@ -510,10 +514,11 @@ class TestRankingAndWeights(GrailTestData, PostgreSQLTestCase):
         vector = SearchVector("dialogue", weight="D") + SearchVector(
             "character__name", weight="A"
         )
+        weights = [1.0, 0.0, 0.0, 0.5]
         searched = (
             Line.objects.filter(scene=self.witch_scene)
             .annotate(
-                rank=SearchRank(vector, SearchQuery("witch"), weights=[1, 0, 0, 0.5]),
+                rank=SearchRank(vector, SearchQuery("witch"), weights=weights),
             )
             .order_by("-rank")[:2]
         )
@@ -658,6 +663,7 @@ class SearchQueryTests(PostgreSQLSimpleTestCase):
 
 class SearchHeadlineTests(GrailTestData, PostgreSQLTestCase):
     def test_headline(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             headline=SearchHeadline(
                 F("dialogue"),
@@ -673,6 +679,7 @@ class SearchHeadlineTests(GrailTestData, PostgreSQLTestCase):
         )
 
     def test_headline_untyped_args(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             headline=SearchHeadline("dialogue", "killed", config="english"),
         ).get(pk=self.verse0.pk)
@@ -725,6 +732,7 @@ class SearchHeadlineTests(GrailTestData, PostgreSQLTestCase):
         )
 
     def test_headline_highlight_all_option(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             headline=SearchHeadline(
                 "dialogue",
@@ -739,6 +747,7 @@ class SearchHeadlineTests(GrailTestData, PostgreSQLTestCase):
         )
 
     def test_headline_short_word_option(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             headline=SearchHeadline(
                 "dialogue",
@@ -756,6 +765,7 @@ class SearchHeadlineTests(GrailTestData, PostgreSQLTestCase):
         )
 
     def test_headline_fragments_words_options(self):
+        self.check_default_text_search_config()
         searched = Line.objects.annotate(
             headline=SearchHeadline(
                 "dialogue",
