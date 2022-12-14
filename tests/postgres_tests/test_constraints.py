@@ -25,14 +25,13 @@ from . import PostgreSQLTestCase
 from .models import HotelReservation, IntegerArrayModel, RangesModel, Room, Scene
 
 try:
-    from psycopg2.extras import DateRange, NumericRange
-
     from django.contrib.postgres.constraints import ExclusionConstraint
     from django.contrib.postgres.fields import (
         DateTimeRangeField,
         RangeBoundary,
         RangeOperators,
     )
+    from django.db.backends.postgresql.psycopg_any import DateRange, NumericRange
 except ImportError:
     pass
 
@@ -70,6 +69,16 @@ class SchemaTests(PostgreSQLTestCase):
         constraint = CheckConstraint(
             check=Q(field__contains=[1]),
             name="array_contains",
+        )
+        msg = f"Constraint “{constraint.name}” is violated."
+        with self.assertRaisesMessage(ValidationError, msg):
+            constraint.validate(IntegerArrayModel, IntegerArrayModel())
+        constraint.validate(IntegerArrayModel, IntegerArrayModel(field=[1]))
+
+    def test_check_constraint_array_length(self):
+        constraint = CheckConstraint(
+            check=Q(field__len=1),
+            name="array_length",
         )
         msg = f"Constraint “{constraint.name}” is violated."
         with self.assertRaisesMessage(ValidationError, msg):
